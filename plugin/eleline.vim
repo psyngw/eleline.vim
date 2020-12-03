@@ -1,6 +1,7 @@
 " =============================================================================
 " Filename: eleline.vim
 " Author: Liu-Cheng Xu
+" Fork: psyngw
 " URL: https://github.com/liuchengxu/eleline.vim
 " License: MIT License
 " =============================================================================
@@ -21,6 +22,7 @@ let s:git_branch_cmd = add(s:is_win ? ['cmd', '/c'] : ['bash', '-c'], 'git branc
 let s:git_branch_symbol = s:font ? " \ue0a0 " : ' Git:'
 let s:git_branch_star_substituted = s:font ? "  \ue0a0" : '  Git:'
 let s:jobs = {}
+let s:colorbuf = 'Normal Mode'
 
 function! ElelineBufnrWinnr() abort
   let l:bufnr = bufnr('%')
@@ -28,7 +30,11 @@ function! ElelineBufnrWinnr() abort
     " transform to circled num: nr2char(9311 + l:bufnr)
     let l:bufnr = l:bufnr > 20 ? l:bufnr : nr2char(9311 + l:bufnr).' '
   endif
-  return '  '.l:bufnr.' ❖ '.winnr().' '
+  return '  '.s:colorbuf.' '.l:bufnr.' ❖ '.winnr().' '
+endfunction
+
+function! s:EleLineModify(buffer) abort
+        let s:colorbuf = a:buffer
 endfunction
 
 function! ElelineTotalBuf() abort
@@ -252,7 +258,7 @@ let s:colors = {
             \   171 : '#d75fd7', 178 : '#ffbb7d', 184 : '#ffe920',
             \   208 : '#ff8700', 232 : '#333300', 197 : '#cc0033',
             \   214 : '#ffff66', 124 : '#af3a03', 172 : '#b57614',
-            \   32  : '#3a81c3', 89  : '#6c3163',
+            \   32  : '#3a81c3', 89  : '#6c3163', 88 : '#5b8c00',
             \
             \   235 : '#262626', 236 : '#303030', 237 : '#3a3a3a',
             \   238 : '#444444', 239 : '#4e4e4e', 240 : '#585858',
@@ -313,7 +319,7 @@ function! s:hi(group, dark, light, ...) abort
 endfunction
 
 function! s:hi_statusline() abort
-  call s:hi('ElelineBufnrWinnr' , [232 , 178]    , [89 , '']  )
+  call s:hi('ElelineBufnrWinnr' , [251 , 88]    , [89 , '']  )
   call s:hi('ElelineTotalBuf'   , [178 , s:bg+8] , [240 , ''] )
   call s:hi('ElelinePaste'      , [232 , 178]    , [232 , 178]    , 'bold')
   call s:hi('ElelineFsize'      , [250 , s:bg+6] , [235 , ''] )
@@ -335,7 +341,8 @@ endfunction
 
 function! s:InsertStatuslineColor(mode) abort
   if a:mode ==# 'i'
-    call s:hi('ElelineBufnrWinnr' , [251, s:bg+8] , [251, s:bg+8])
+    " call s:hi('ElelineBufnrWinnr' , [251, s:bg+8] , [251, s:bg+8])
+    call s:hi('ElelineBufnrWinnr' , [251, 32] , [251, 89])
   elseif a:mode ==# 'r'
     call s:hi('ElelineBufnrWinnr' , [232, 160], [232, 160])
   else
@@ -368,7 +375,13 @@ augroup eleline
   autocmd!
   autocmd User GitGutter,Startified,LanguageClientStarted call s:SetStatusLine()
   " Change colors for insert mode
-  autocmd InsertLeave * call s:hi('ElelineBufnrWinnr', [232, 178], [89, ''])
+  autocmd InsertLeave * call s:EleLineModify('Normal Mode')
+  autocmd InsertEnter * call s:EleLineModify('Insert Mode')
+  autocmd CmdlineEnter * call s:EleLineModify('Command Mode')
+  autocmd CmdlineLeave * call s:EleLineModify('Normal Mode')
+  autocmd CmdlineEnter * call s:hi('ElelineBufnrWinnr', [248, 89], [89, '']) | redraw
+  autocmd CmdlineLeave * call s:hi('ElelineBufnrWinnr', [251, 88], [89, ''])
+  autocmd InsertLeave * call s:hi('ElelineBufnrWinnr', [251, 88], [89, ''])
   autocmd InsertEnter,InsertChange * call s:InsertStatuslineColor(v:insertmode)
   autocmd BufWinEnter,ShellCmdPost,BufWritePost * call s:SetStatusLine()
   autocmd FileChangedShellPost,ColorScheme * call s:SetStatusLine()
